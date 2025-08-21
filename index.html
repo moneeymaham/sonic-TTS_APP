@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple TTS App</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+        }
+        /* Custom styles for the API key input and main app sections */
+        #api-key-section.hidden,
+        #main-app.hidden {
+            display: none;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #4f46e5;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full">
+        <!-- API Key Section - shown initially -->
+        <div id="api-key-section" class="">
+            <h2 class="text-2xl font-bold text-gray-800 text-center mb-4">Enter Your API Key</h2>
+            <p class="text-sm text-gray-600 text-center mb-4">You'll need a Google API key with the Generative Language API enabled. You can get one from the <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener" class="text-indigo-600 hover:underline">Google AI Studio</a>.</p>
+            <div class="mb-4">
+                <input type="password" id="api-key-input" class="w-full p-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-indigo-500 transition-colors duration-200 text-gray-700" placeholder="Paste your API key here...">
+            </div>
+            <button id="save-key-button" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-indigo-700 transition-all duration-200 flex items-center justify-center">
+                <span id="save-text">Save Key</span>
+                <svg id="save-spinner" class="animate-spin h-5 w-5 text-white ml-2 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Main TTS App - shown after key is saved -->
+        <div id="main-app" class="hidden">
+            <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">Simple TTS App</h1>
+            <p class="text-sm text-gray-600 text-center mb-6">Type in some text, select a voice, and press play!</p>
+
+            <!-- Text Input Area -->
+            <textarea id="tts-text" class="w-full h-32 p-4 mb-4 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-indigo-500 transition-colors duration-200 resize-none text-gray-700" placeholder="Enter text here..."></textarea>
+            <button id="clear-button" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-xl shadow-lg hover:bg-red-700 transition-all duration-200 flex items-center justify-center mb-4">
+                Clear Text
+            </button>
+            <button id="copy-button" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-xl shadow-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center mb-4">
+                Copy Text
+            </button>
+            <button id="paste-button" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-xl shadow-lg hover:bg-green-700 transition-all duration-200 flex items-center justify-center mb-4">
+                Paste Text
+            </button>
+
+            <!-- LLM Feature Buttons -->
+            <div class="flex space-x-2 mb-4">
+                <button id="continue-button" class="w-1/2 bg-violet-600 text-white text-sm font-bold py-2 px-4 rounded-xl shadow-lg hover:bg-violet-700 transition-all duration-200 flex items-center justify-center">
+                    <span class="mr-1">✨</span> Continue Text
+                </button>
+                <button id="summarize-button" class="w-1/2 bg-amber-600 text-white text-sm font-bold py-2 px-4 rounded-xl shadow-lg hover:bg-amber-700 transition-all duration-200 flex items-center justify-center">
+                    <span class="mr-1">✍️</span> Prepare Script
+                </button>
+            </div>
+
+            <!-- Voice Selection & Multi-speaker Toggle -->
+            <div class="mb-6 flex items-center justify-between">
+                <div>
+                    <label for="voice-select" class="block text-gray-700 font-medium mb-2">Select Voice:</label>
+                    <select id="voice-select" class="w-full p-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-indigo-500 transition-colors duration-200 text-gray-700 appearance-none bg-white pr-8">
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                </div>
+                <div class="flex flex-col items-center">
+                    <label for="multi-speaker-toggle" class="text-gray-700 font-medium mb-2">Multi-speaker</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="multi-speaker-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Pitch and Speaking Rate -->
+            <div class="mb-6">
+                <label for="pitch-slider" class="block text-gray-700 font-medium mb-2">Pitch:</label>
+                <input type="range" id="pitch-slider" min="-20" max="20" value="0" class="w-full">
+            </div>
+            <div class="mb-6">
+                <label for="rate-slider" class="block text-gray-700 font-medium mb-2">Speaking Rate:</label>
+                <input type="range" id="rate-slider" min="0.25" max="4" value="1" step="0.25" class="w-full">
+            </div>
+
+            <div class="mb-6">
+                <label for="volume-slider" class="block text-gray-700 font-medium mb-2">Volume:</label>
+                <input type="range" id="volume-slider" min="0" max="1" value="1" step="0.1" class="w-full">
+            </div>
+
+            <div class="mb-6">
+                <label for="sample-rate-select" class="block text-gray-700 font-medium mb-2">Sample Rate:</label>
+                <select id="sample-rate-select" class="w-full p-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-indigo-500 transition-colors duration-200 text-gray-700 appearance-none bg-white pr-8">
+                    <option value="16000">16000 Hz</option>
+                    <option value="22050">22050 Hz</option>
+                    <option value="24000" selected>24000 Hz</option>
+                    <option value="44100">44100 Hz</option>
+                    <option value="48000">48000 Hz</option>
+                </select>
+            </div>
+
+            <!-- Play Button -->
+            <button id="play-button" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-indigo-700 transition-all duration-200 flex items-center justify-center">
+                <span id="play-text">Play</span>
+                <svg id="loading-spinner" class="animate-spin h-5 w-5 text-white ml-2 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
+            <button id="stop-button" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-xl shadow-lg hover:bg-red-700 transition-all duration-200 flex items-center justify-center mt-4 hidden">
+                Stop
+            </button>
+
+            <!-- Status Message Box -->
+            <div id="status-message" class="mt-4 p-3 text-center text-sm font-medium rounded-lg text-gray-700 bg-gray-100 hidden"></div>
+        </div>
+    </div>
+    <!-- Main JavaScript file -->
+    <script src="config.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>
