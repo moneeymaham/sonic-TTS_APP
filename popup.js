@@ -180,6 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedVoice = voiceSelect.value;
         
         try {
+            // Only request AUDIO from the TTS model
             const payload = {
                 contents: [{
                     parts: [{ text: text }]
@@ -208,17 +209,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             }));
-            
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error.message || `API call failed with status: ${response.status}`);
+                let errorMsg = `API call failed with status: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    if (errorData?.error?.message) errorMsg = errorData.error.message;
+                    // Special handling for unsupported modalities
+                    if (errorMsg.includes('combination of response modalities')) {
+                        errorMsg = 'The selected model only supports AUDIO output. Please ensure you are using the TTS feature, not text generation.';
+                    }
+                } catch {}
+                throw new Error(errorMsg);
             }
 
             const result = await response.json();
             const part = result?.candidates?.[0]?.content?.parts?.[0];
             const audioData = part?.inlineData?.data;
             const mimeType = part?.inlineData?.mimeType;
-            
+
             if (!audioData || !mimeType || !mimeType.startsWith("audio/L16")) {
                 throw new Error('API response did not contain valid audio data.');
             }
@@ -227,10 +236,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const pcmData = base64ToArrayBuffer(audioData);
             const pcm16 = new Int16Array(pcmData);
             const wavBlob = pcmToWav(pcm16, sampleRate);
-            
+
             const audioUrl = URL.createObjectURL(wavBlob);
             const audio = new Audio(audioUrl);
-            
+
             audio.onended = () => {
                 URL.revokeObjectURL(audioUrl);
                 toggleLoading(playButton, playTextSpan, loadingSpinner, false);
