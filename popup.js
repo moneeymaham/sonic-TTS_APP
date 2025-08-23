@@ -185,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     parts: [{ text: text }]
                 }],
                 generationConfig: {
-                    responseModality: ["AUDIO"],
                     speechConfig: isMultiSpeaker
                         ? {
                             multiSpeakerVoiceConfig: {
