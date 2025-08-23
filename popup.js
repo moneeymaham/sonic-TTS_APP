@@ -200,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }
                 },
+                response_modality: ["AUDIO"],
                 model: "gemini-2.5-flash-preview-tts"
             };
 
