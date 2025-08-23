@@ -82,7 +82,7 @@
             button.disabled = true;
             textSpan.classList.add('hidden');
             spinner.classList.remove('hidden');
-        } else {
+        
             button.disabled = false;
             textSpan.classList.remove('hidden');
             spinner.classList.add('hidden');
